@@ -25,6 +25,14 @@ uploadArchives {
 //        repository(url: "http://10.XXX.XXX.XXX:8080/nexus/content/repositories/releases/") {
 //            authentication(userName: "admin", password: "admin123")
 //        }
-        repository(url: 'file://'+new File(System.getProperty("user.home"),".m2/repository").absolutePath)
+//        repository(url: 'file://'+new File(System.getProperty("user.home"),".m2/repository").absolutePath)
+        name = 'Codearte Public Repository'
+
+        //BINTRAY_USER,BINTRAY_KEY values are stored in ~/.gradle/gradle.properties
+        repository(id: 'bintray-lambor-simpleentity', url: 'https://api.bintray.com/maven/lambor/simpleentity/SimpleEntityHelper') {
+            authentication(userName: BINTRAY_USER, password: BINTRAY_KEY)
+        }
     }
 }
+
+uploadArchives.dependsOn ':build'
