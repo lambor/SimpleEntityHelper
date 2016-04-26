@@ -1,0 +1,30 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+version = '1.0'
+group = 'com.dcnh35'
+archivesBaseName = 'simpleentityhelper'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+}
+
+compileGroovy {
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+    options.encoding = "UTF-8"
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+//        repository(url: "http://10.XXX.XXX.XXX:8080/nexus/content/repositories/releases/") {
+//            authentication(userName: "admin", password: "admin123")
+//        }
+        repository(url: 'file://'+new File(System.getProperty("user.home"),".m2/repository").absolutePath)
+    }
+}
