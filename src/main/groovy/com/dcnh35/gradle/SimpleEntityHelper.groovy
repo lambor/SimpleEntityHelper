@@ -1,11 +1,10 @@
 package com.dcnh35.gradle
 
+import com.android.build.gradle.api.AndroidSourceSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.tasks.Copy
-import org.gradle.api.tasks.Delete
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.JavaCompile
 
 class SimpleEntityHelper implements Plugin<Project> {
@@ -14,13 +13,13 @@ class SimpleEntityHelper implements Plugin<Project> {
 
     Copy copyEntites;
     JavaCompile javaCompile
-    Delete clean;
 
     Project project
     SimpleEntityHelperExtension extension
 
     String buildDir
-    SourceSet main;
+    File mainSource;
+    String classPath;
     String srcPath;
 
     @Override
@@ -28,28 +27,56 @@ class SimpleEntityHelper implements Plugin<Project> {
         this.project = target;
         this.extension = project.extensions.create(PLUGIN_NAME, SimpleEntityHelperExtension)
 
+        def variants = null
+        //com.android.application
+        if (project.plugins.findPlugin("android") || project.plugins.findPlugin("com.android.application")) {
+            variants = "applicationVariants"
+        } else if (project.plugins.findPlugin("android-library") || project.plugins.findPlugin("com.android.library")) {
+            variants = "libraryVariants"
+        } else {
+            throw new ProjectConfigurationException("The android or android-library plugin must be applied to the project", null);
+        }
+
         //坑啊
         project.afterEvaluate {
+
+//            //http://www.programcreek.com/java-api-examples/index.php?api=org.gradle.api.Project
+//            //only work on java plugin not on android plugin
+//            final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class)
+//            main = javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+            project.android[variants].any {
+                variant ->
+                    JavaCompile javaCompile = variant.javaCompile
+//                    println(javaCompile.classpath.asPath)
+                    classPath = javaCompile.classpath.asPath
+            }
+
+            def sets;
+            if (Utils.is140orAbove()) {
+                sets = project.android.sourceSets;
+            } else {
+                sets = project.android.sourceSetsContainer;
+            }
+            sets.all { AndroidSourceSet sourceSet ->
+                if(sourceSet.name.startsWith("main"))
+                    for(File file:sourceSet.java.getSrcDirs())
+                        if(file.exists()) {
+                            mainSource = file;
+                            break;
+                        }
+            }
+
+
+//            srcPath = src/main/java
+            srcPath = mainSource.absolutePath
             buildDir = project.buildDir.absolutePath
-
-            //http://www.programcreek.com/java-api-examples/index.php?api=org.gradle.api.Project
-            final JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-            main = javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-
-            //srcPath = /src/main/java
-            srcPath = main.java.srcDirs[0].absolutePath
 
             createGenerateOneTask()
             createCopyTask()
         }
     }
 
-//    task compileOne (type: JavaCompile) {
-//        source = sourceSets.main.java.srcDirs
-//        include 'com/example/MyClass.java'
-//        classpath = sourceSets.main.compileClasspath
-//        destinationDir = new File(generatedResources)
-//    }
     def generatedResources = "/dcnh35/entities"
 
 //    private void createCleanTask() {
@@ -61,9 +88,9 @@ class SimpleEntityHelper implements Plugin<Project> {
 //        javaCompile.dependsOn clean
         javaCompile = project.tasks.create("compileOne", JavaCompile)
         javaCompile.setDescription("compile the java file that holds json strings")
-        javaCompile.source = main.java.srcDirs
+        javaCompile.source = mainSource
         javaCompile.include(classToFilename(extension.jsonStringClass))
-        javaCompile.classpath = main.compileClasspath
+        javaCompile.classpath = project.files(classPath)
         javaCompile.destinationDir = new File(buildDir + generatedResources)
         javaCompile.doFirst {
             setProcessorEnable(true)
@@ -75,7 +102,7 @@ class SimpleEntityHelper implements Plugin<Project> {
         copyEntites.setDescription("copy the generated entity java files to srcDir")
         copyEntites.dependsOn javaCompile
         copyEntites.from(buildDir + generatedResources)
-        copyEntites.into(main.java.srcDirs[0])
+        copyEntites.into(mainSource)
         copyEntites.doLast {
             setProcessorEnable(false)
         }
