@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin: 'maven'
 
-version = '1.1'
+version = '1.2'
 group = 'com.dcnh35'
 archivesBaseName = 'simpleentityhelper'
 
@@ -28,7 +28,7 @@ uploadArchives {
         name = 'Codearte Public Repository'
 
         //BINTRAY_USER,BINTRAY_KEY values are stored in ~/.gradle/gradle.properties
-        repository(id: 'bintray-lambor-simpleentity', url: 'https://api.bintray.com/maven/lambor/simpleentity/SimpleEntityHelper') {
+        repository(id: 'bintray-lambor-simpleentity', url: 'https://api.bintray.com/maven/lambor/simpleentity/SimpleEntityHelper/;publish=1') {
             authentication(userName: BINTRAY_USER, password: BINTRAY_KEY)
         }
     }

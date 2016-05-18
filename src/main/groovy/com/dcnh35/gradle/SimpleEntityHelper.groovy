@@ -110,17 +110,18 @@ class SimpleEntityHelper implements Plugin<Project> {
 
 
     private void setProcessorEnable(boolean enable) {
+        println("processor enable:"+enable.toString())
+        enable = !enable; //skip = !enable;
         def jsonClass = srcPath + "/" + classToFilename(extension.jsonStringClass)
         def fileContent = new File(jsonClass).getText('UTF-8')
-        String result = fileContent.replaceAll("(@EntitiesConfig)(?=\\s*[^(])","@EntitiesConfig(switchGenerate = "+enable.toString()+")")
-        if (result.contains("switchGenerate")) {
-            result = result.replaceAll("switchGenerate\\s*=\\s*" + (!enable).toString()
-                    , "switchGenerate = " + enable.toString())
+        String result = fileContent.replaceAll("(@EntitiesConfig)(?=\\s*[^(])","@EntitiesConfig(skipGenerate = "+enable.toString()+")")
+        if (result.contains("skipGenerate")) {
+            result = result.replaceAll("skipGenerate\\s*=\\s*" + (!enable).toString()
+                    , "skipGenerate = " + enable.toString())
         } else {
-            result = result.replaceAll("@EntitiesConfig\\s*\\(","@EntitiesConfig(switchGenerate = " + enable.toString()+",")
+            result = result.replaceAll("@EntitiesConfig\\s*\\(","@EntitiesConfig(skipGenerate = " + enable.toString()+",")
         }
         new File(jsonClass).write(result, 'UTF-8')
-        println("processor enable:"+enable.toString())
     }
 
     private String classToFilename(String className) {
